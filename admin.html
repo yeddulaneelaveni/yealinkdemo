@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Price Manager – Freshroots Technologies</title>
+<meta name="robots" content="noindex, nofollow">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --green:       #1c7a44;
+    --green-dark:  #155c33;
+    --green-light: #e8f5ee;
+    --green-mid:   #d0eddb;
+    --green-text:  #0f4424;
+    --white:       #ffffff;
+    --bg:          #f4f7f5;
+    --text:        #1a2e22;
+    --muted:       #6b8c77;
+    --border:      #d4e6db;
+    --red:         #c0392b;
+    --red-light:   #fdecea;
+  }
+
+  body {
+    background: var(--bg);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── LOGIN SCREEN ────────────────────────────────────────── */
+  #login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .login-card {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    padding: 40px 36px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: 0 8px 32px rgba(28,122,68,0.1);
+  }
+  .login-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--green-light);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .login-card h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .login-card p.sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 5px;
+  }
+  .field input {
+    width: 100%;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 13px;
+    font-size: 14px;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .field input:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(28,122,68,0.12);
+  }
+
+  .btn-primary {
+    width: 100%;
+    background: var(--green);
+    color: #fff;
+    border: none;
+    padding: 13px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.18s;
+    margin-top: 6px;
+  }
+  .btn-primary:hover { background: var(--green-dark); }
+  .btn-primary:disabled { background: #aab; cursor: not-allowed; opacity: 0.7; }
+
+  .btn-secondary {
+    width: 100%;
+    background: var(--green-light);
+    color: var(--green-dark);
+    border: 1px solid var(--green-mid);
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.18s;
+  }
+  .btn-secondary:hover { background: var(--green-mid); }
+
+  .alert {
+    display: none;
+    border-radius: 10px;
+    padding: 10px 13px;
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .alert.error { display: block; background: var(--red-light); color: var(--red); border: 1px solid #f3c6c1; }
+  .alert.success { display: block; background: var(--green-light); color: var(--green-text); border: 1px solid var(--green-mid); }
+  .alert.info { display: block; background: #eef3fb; color: #244a7a; border: 1px solid #cddcf0; }
+
+  /* ── DASHBOARD ───────────────────────────────────────────── */
+  #dashboard { display: none; max-width: 880px; margin: 0 auto; padding: 40px 20px 80px; }
+
+  .dash-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .dash-header h1 { font-size: 26px; font-weight: 800; }
+  .dash-header p.sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .signed-in-as { font-size: 12px; color: var(--muted); }
+  .signout-link {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 7px 13px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .signout-link:hover { border-color: #aaa; color: var(--text); }
+
+  .panel {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: 18px;
+    padding: 26px;
+    margin-bottom: 22px;
+  }
+  .panel h2 { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+  .panel p.desc { font-size: 13px; color: var(--muted); margin-bottom: 18px; line-height: 1.6; }
+
+  .upload-zone {
+    border: 2px dashed var(--green-mid);
+    border-radius: 14px;
+    padding: 28px 20px;
+    text-align: center;
+    background: var(--green-light);
+    margin-bottom: 16px;
+  }
+  .upload-zone input[type="file"] { display: none; }
+  .upload-zone label.file-btn {
+    display: inline-block;
+    background: var(--white);
+    border: 1.5px solid var(--green-mid);
+    color: var(--green-dark);
+    padding: 10px 18px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .upload-zone label.file-btn:hover { background: var(--green); color: #fff; }
+  .upload-zone .file-name { font-size: 12px; color: var(--muted); margin-top: 10px; }
+  .upload-zone .req-note { font-size: 11px; color: var(--muted); margin-top: 12px; line-height: 1.6; }
+
+  table.preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  table.preview-table th {
+    text-align: left;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    border-bottom: 1.5px solid var(--border);
+    padding: 8px 10px;
+  }
+  table.preview-table td {
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.preview-table tr:last-child td { border-bottom: none; }
+  .row-ok { color: var(--text); }
+  .row-bad { color: var(--red); }
+  .price-old { color: var(--muted); text-decoration: line-through; font-size: 12px; }
+  .price-new { color: var(--green); font-weight: 800; }
+  .status-tag {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+  .status-tag.ok { background: var(--green-light); color: var(--green-text); }
+  .status-tag.bad { background: var(--red-light); color: var(--red); }
+
+  .actions-row { display: flex; gap: 10px; margin-top: 4px; }
+  .actions-row .btn-primary { width: auto; flex: 1; }
+  .actions-row .btn-secondary { width: auto; flex: 1; }
+
+  #upload-loading, #confirm-loading {
+    display: none;
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    padding: 10px;
+  }
+
+  .sku-ref-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .sku-ref-table th { text-align: left; color: var(--muted); font-size: 10px; text-transform: uppercase; padding: 6px 8px; border-bottom: 1.5px solid var(--border); }
+  .sku-ref-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); font-family: 'Courier New', monospace; }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ─────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-eyebrow">Freshroots Technologies</div>
+    <h1>Price Manager</h1>
+    <p class="sub">Sign in with your admin account to update product prices.</p>
+    <div class="alert error" id="login-error"></div>
+    <form id="login-form">
+      <div class="field">
+        <label>Admin Email</label>
+        <input type="email" id="login-email" required autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="login-password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn-primary" id="login-btn">Log In</button>
+    </form>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ────────────────────────────────────────────── -->
+<div id="dashboard">
+  <div class="dash-header">
+    <div>
+      <h1>Price Manager</h1>
+      <p class="sub">Update the prices shown on the storefront by uploading an Excel file.</p>
+    </div>
+    <div style="text-align:right">
+      <div class="signed-in-as" id="signed-in-as"></div>
+      <button class="signout-link" id="signout-btn" style="margin-top:6px">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- STEP 1: Template -->
+  <div class="panel">
+    <h2>Step 1 — Get the price sheet</h2>
+    <p class="desc">Download the current price list as an Excel file. It already has every product's SKU and current price filled in — just edit the numbers in the "New Price" column and save.</p>
+    <button class="btn-secondary" id="download-template-btn">Download Current Prices (.xlsx)</button>
+  </div>
+
+  <!-- STEP 2: Upload -->
+  <div class="panel">
+    <h2>Step 2 — Upload the updated file</h2>
+    <p class="desc">Upload the same file back once you've edited the prices. The file must keep the SKU and New Price columns from the template.</p>
+
+    <div class="upload-zone">
+      <label class="file-btn" for="file-input">Choose Excel File</label>
+      <input type="file" id="file-input" accept=".xlsx,.xls">
+      <div class="file-name" id="file-name">No file selected</div>
+      <div class="req-note">Accepted: .xlsx or .xls &nbsp;·&nbsp; Max size: 5 MB &nbsp;·&nbsp; Must be a readable, non-password-protected file</div>
+    </div>
+
+    <div class="alert error" id="upload-error"></div>
+    <div id="upload-loading">Reading file…</div>
+  </div>
+
+  <!-- STEP 3: Preview + Confirm -->
+  <div class="panel" id="preview-panel" style="display:none">
+    <h2>Step 3 — Review before publishing</h2>
+    <p class="desc">Check this looks right. Nothing on the live site changes until you click Publish.</p>
+    <div id="preview-table-wrap"></div>
+    <div class="alert info" id="preview-summary"></div>
+    <div id="confirm-loading">Publishing…</div>
+    <div class="actions-row">
+      <button class="btn-secondary" id="cancel-btn">Cancel</button>
+      <button class="btn-primary" id="confirm-btn">Publish Prices</button>
+    </div>
+  </div>
+
+  <!-- Success -->
+  <div class="panel" id="success-panel" style="display:none">
+    <h2>✓ Prices published</h2>
+    <p class="desc" id="success-detail"></p>
+  </div>
+
+  <!-- Reference table -->
+  <div class="panel">
+    <h2>Product reference</h2>
+    <p class="desc">These are the exact SKUs the storefront recognizes. Rows in your upload with a SKU not on this list will be skipped.</p>
+    <table class="sku-ref-table">
+      <thead><tr><th>SKU</th><th>Item</th></tr></thead>
+      <tbody id="sku-ref-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // ─── FIREBASE CONFIG ────────────────────────────────────────
+  // Same project as setup.html — see firebase-setup-guide.md
+  const firebaseConfig = {
+    apiKey: "AIzaSyC4s-rKlOQOFz_R_s40ldQ2sWe97ROpYB8",
+    authDomain: "freshroots-pricing.firebaseapp.com",
+    projectId: "freshroots-pricing",
+    storageBucket: "freshroots-pricing.firebasestorage.app",
+    messagingSenderId: "873624955123",
+    appId: "1:873624955123:web:6f13af2d559733abc46f86"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  // This MUST be the master list — SKU is the stable ID used to match
+  // Excel rows to storefront products. Keep this in sync with the
+  // `products` array in setup.html whenever you add/remove a product.
+  const PRODUCT_MASTER = [
+    { sku: "HUDDLE-UVC40E2", name: "UVC40E2 (Huddle Room)",              basePrice: 70000  },
+    { sku: "SMALL-SV40",     name: "SV40 (Small Room)",                  basePrice: 160000 },
+    { sku: "MEDIUM-A50PRO",  name: "A50 USB / WPP30 + CTP25 (Medium Room)", basePrice: 500000 },
+    { sku: "LARGE-A50ENT",   name: "Meeting Board / SV80+ CM20+CS10 (Large Room)", basePrice: 700000 },
+    { sku: "BOARD-PRO",      name: "Meeting Board Pro",                  basePrice: 1200000 }
+  ];
+
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const MAX_FILENAME_LENGTH = 150;
+
+  let pendingRows = []; // validated rows ready to publish: [{sku, name, oldPrice, newPrice}]
+
+  // ── AUTH ──────────────────────────────────────────────────
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      document.getElementById('signed-in-as').textContent = 'Signed in as ' + user.email;
+    } else {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('dashboard').style.display = 'none';
+    }
+  });
+
+  document.getElementById('login-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl = document.getElementById('login-error');
+    const btn = document.getElementById('login-btn');
+    errEl.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+
+    auth.signInWithEmailAndPassword(email, password)
+      .catch(err => {
+        errEl.textContent = 'Could not sign in: ' + friendlyAuthError(err.code);
+        errEl.style.display = 'block';
+      })
+      .finally(() => {
+        btn.disabled = false;
+        btn.textContent = 'Log In';
+      });
+  });
+
+  document.getElementById('signout-btn').addEventListener('click', () => auth.signOut());
+
+  function friendlyAuthError(code) {
+    if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+      return 'Incorrect email or password.';
+    }
+    if (code === 'auth/too-many-requests') return 'Too many attempts. Try again in a few minutes.';
+    return 'Please try again.';
+  }
+
+  // ── SKU REFERENCE TABLE ──────────────────────────────────
+  document.getElementById('sku-ref-body').innerHTML = PRODUCT_MASTER.map(p =>
+    `<tr><td>${p.sku}</td><td>${p.name}</td></tr>`
+  ).join('');
+
+  // ── STEP 1: DOWNLOAD TEMPLATE ────────────────────────────
+  document.getElementById('download-template-btn').addEventListener('click', function () {
+    const rows = PRODUCT_MASTER.map(p => ({
+      'SKU': p.sku,
+      'Item Name': p.name,
+      'Current Price': p.basePrice,
+      'New Price': p.basePrice
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [{ wch: 20 }, { wch: 38 }, { wch: 14 }, { wch: 14 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Prices');
+    XLSX.writeFile(wb, 'freshroots-price-template.xlsx');
+  });
+
+  // ── STEP 2: FILE UPLOAD + VALIDATION + PARSE ─────────────
+  const fileInput = document.getElementById('file-input');
+  const uploadError = document.getElementById('upload-error');
+  const uploadLoading = document.getElementById('upload-loading');
+
+  fileInput.addEventListener('change', function () {
+    const file = fileInput.files[0];
+    hideEl(uploadError);
+    hideEl(document.getElementById('preview-panel'));
+    hideEl(document.getElementById('success-panel'));
+    pendingRows = [];
+
+    if (!file) {
+      document.getElementById('file-name').textContent = 'No file selected';
+      return;
+    }
+    document.getElementById('file-name').textContent = file.name;
+
+    // Validate file name length
+    if (file.name.length > MAX_FILENAME_LENGTH) {
+      return showUploadError('That file name is too long. Please rename it to something shorter and re-upload.');
+    }
+    // Validate extension
+    const lowerName = file.name.toLowerCase();
+    if (!lowerName.endsWith('.xlsx') && !lowerName.endsWith('.xls')) {
+      return showUploadError('Only .xlsx or .xls files are accepted.');
+    }
+    // Validate size
+    if (file.size > MAX_FILE_SIZE) {
+      return showUploadError('File is too large. Please keep it under 5 MB.');
+    }
+    if (file.size === 0) {
+      return showUploadError('That file appears to be empty.');
+    }
+
+    uploadLoading.style.display = 'block';
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      uploadLoading.style.display = 'none';
+      let workbook;
+      try {
+        workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      } catch (err) {
+        // XLSX.read throws here for corrupted or password-protected files
+        return showUploadError('Could not read this file. It may be corrupted or password-protected — please save a fresh, unprotected copy and try again.');
+      }
+      const sheetName = workbook.SheetNames[0];
+      if (!sheetName) return showUploadError('This file has no sheets in it.');
+      const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
+      if (rows.length === 0) return showUploadError('No rows found in the sheet.');
+
+      processRows(rows);
+    };
+    reader.onerror = function () {
+      uploadLoading.style.display = 'none';
+      showUploadError('Could not read this file. Please try again.');
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  function normalizeKey(key) {
+    return String(key).trim().toLowerCase().replace(/\s+/g, '');
+  }
+
+  function processRows(rawRows) {
+    const results = [];
+    let unknownCount = 0;
+    let invalidPriceCount = 0;
+
+    rawRows.forEach(raw => {
+      // Normalize headers so "SKU", "sku", " SKU " etc. all match
+      const normalized = {};
+      Object.keys(raw).forEach(k => { normalized[normalizeKey(k)] = raw[k]; });
+
+      const sku = String(normalized['sku'] || '').trim();
+      const newPriceRaw = normalized['newprice'];
+      if (!sku) return; // skip blank rows
+
+      const master = PRODUCT_MASTER.find(p => p.sku === sku);
+      const newPrice = Number(newPriceRaw);
+      const priceValid = !isNaN(newPrice) && newPrice > 0;
+
+      if (!master) unknownCount++;
+      if (master && !priceValid) invalidPriceCount++;
+
+      results.push({
+        sku: sku,
+        name: master ? master.name : '(unknown SKU)',
+        oldPrice: master ? master.basePrice : null,
+        newPrice: priceValid ? newPrice : null,
+        valid: !!master && priceValid
+      });
+    });
+
+    if (results.length === 0) {
+      return showUploadError('No valid rows found. Make sure the SKU column is filled in.');
+    }
+
+    pendingRows = results;
+    renderPreview(results, unknownCount, invalidPriceCount);
+  }
+
+  function renderPreview(rows, unknownCount, invalidPriceCount) {
+    const validCount = rows.filter(r => r.valid).length;
+
+    const tableHtml = `
+      <table class="preview-table">
+        <thead><tr><th>SKU</th><th>Item</th><th>Old Price</th><th>New Price</th><th>Status</th></tr></thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr class="${r.valid ? 'row-ok' : 'row-bad'}">
+              <td>${escapeHtml(r.sku)}</td>
+              <td>${escapeHtml(r.name)}</td>
+              <td>${r.oldPrice !== null ? '₹' + r.oldPrice.toLocaleString('en-IN') : '—'}</td>
+              <td>${r.newPrice !== null ? '<span class="price-new">₹' + r.newPrice.toLocaleString('en-IN') + '</span>' : '—'}</td>
+              <td><span class="status-tag ${r.valid ? 'ok' : 'bad'}">${r.valid ? 'Will update' : 'Skipped'}</span></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+    document.getElementById('preview-table-wrap').innerHTML = tableHtml;
+
+    let summary = `${validCount} of ${rows.length} row(s) will be published.`;
+    if (unknownCount > 0) summary += ` ${unknownCount} row(s) had a SKU not on the product list and will be skipped.`;
+    if (invalidPriceCount > 0) summary += ` ${invalidPriceCount} row(s) had a missing or invalid price and will be skipped.`;
+    document.getElementById('preview-summary').textContent = summary;
+
+    document.getElementById('confirm-btn').disabled = validCount === 0;
+    showEl(document.getElementById('preview-panel'));
+  }
+
+  document.getElementById('cancel-btn').addEventListener('click', function () {
+    pendingRows = [];
+    fileInput.value = '';
+    document.getElementById('file-name').textContent = 'No file selected';
+    hideEl(document.getElementById('preview-panel'));
+  });
+
+  // ── STEP 3: PUBLISH TO FIRESTORE ─────────────────────────
+  document.getElementById('confirm-btn').addEventListener('click', async function () {
+    const validRows = pendingRows.filter(r => r.valid);
+    if (validRows.length === 0) return;
+
+    const confirmBtn = document.getElementById('confirm-btn');
+    const confirmLoading = document.getElementById('confirm-loading');
+    confirmBtn.disabled = true;
+    confirmLoading.style.display = 'block';
+
+    try {
+      const batch = db.batch();
+      validRows.forEach(row => {
+        const ref = db.collection('prices').doc(row.sku);
+        batch.set(ref, {
+          price: row.newPrice,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedBy: auth.currentUser.email
+        });
+      });
+      await batch.commit();
+
+      hideEl(document.getElementById('preview-panel'));
+      document.getElementById('success-detail').textContent =
+        `${validRows.length} price(s) are now live on the storefront.`;
+      showEl(document.getElementById('success-panel'));
+
+      fileInput.value = '';
+      document.getElementById('file-name').textContent = 'No file selected';
+      pendingRows = [];
+    } catch (err) {
+      showUploadError('Could not publish prices: ' + err.message);
+      showEl(document.getElementById('preview-panel'));
+    } finally {
+      confirmBtn.disabled = false;
+      confirmLoading.style.display = 'none';
+    }
+  });
+
+  // ── HELPERS ───────────────────────────────────────────────
+  function showUploadError(msg) {
+    uploadError.textContent = msg;
+    showEl(uploadError);
+  }
+  function showEl(el) { el.style.display = 'block'; }
+  function hideEl(el) { el.style.display = 'none'; }
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+</script>
+</body>
+</html>

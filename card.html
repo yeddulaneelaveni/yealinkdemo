@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recommended Setup – Freshroots Technologies</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="chatbot.js"></script>
+<script>
+  // ─── FIREBASE CONFIG (for reading live prices set by the admin panel) ──
+  // Get these values from Firebase Console → Project Settings → General
+  // → "Your apps" → Web app. This config is safe to expose publicly —
+  // it is NOT a secret. Access is controlled by Firestore security rules,
+  // not by hiding this object. See firebase-setup-guide.md.
+  const firebaseConfig = {
+    apiKey: "AIzaSyC4s-rKlOQOFz_R_s40ldQ2sWe97ROpYB8",
+    authDomain: "freshroots-pricing.firebaseapp.com",
+    projectId: "freshroots-pricing",
+    storageBucket: "freshroots-pricing.firebasestorage.app",
+    messagingSenderId: "873624955123",
+    appId: "1:873624955123:web:6f13af2d559733abc46f86"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const priceDb = firebase.firestore();
+</script>
+<script>
+  // ─── EMAILJS CONFIG ───────────────────────────────────────────
+  // 1. Go to https://www.emailjs.com → sign up free
+  // 2. Add a Gmail service → copy the Service ID below
+  // 3. Create an email template → copy the Template ID below
+  // 4. Go to Account → copy your Public Key below
+  // Replace the three placeholder strings and this file is live.
+  const EMAILJS_PUBLIC_KEY  = 'zZdu-rLL0CwV5_Ae2';   // e.g. 'abc123XYZ'
+  const EMAILJS_SERVICE_ID  = 'service_vkdib0b';   // e.g. 'service_abc123'
+  const EMAILJS_TEMPLATE_ID = 'template_pe4tkvv';  // e.g. 'template_xyz789'
+  // Template variables to map in EmailJS dashboard:
+  // {{from_name}}  {{from_email}}  {{phone}}  {{company}}
+  // {{country}}    {{address}}     {{installation}}
+  // {{order_items}} {{order_total}} {{notes}}
+  // ─────────────────────────────────────────────────────────────
+  emailjs.init(EMAILJS_PUBLIC_KEY);
+</script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --green:       #1c7a44;
+    --green-dark:  #155c33;
+    --green-light: #e8f5ee;
+    --green-mid:   #d0eddb;
+    --green-text:  #0f4424;
+    --accent:      #2daa62;
+    --white:       #ffffff;
+    --bg:          #f4f7f5;
+    --text:        #1a2e22;
+    --muted:       #6b8c77;
+    --border:      #d4e6db;
+    --card-shadow: 0 2px 12px rgba(28,122,68,0.08), 0 1px 3px rgba(0,0,0,0.06);
+    --card-hover:  0 8px 32px rgba(28,122,68,0.16), 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  body {
+    background: var(--bg);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* FLOATING CART BTN */
+  #cart-fab {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    z-index: 150;
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 16px rgba(28,122,68,0.35);
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  }
+  #cart-fab:hover { background: var(--green-dark); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(28,122,68,0.4); }
+  #cart-fab:active { transform: scale(0.97); }
+  #cart-count {
+    background: #fff;
+    color: var(--green-dark);
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  /* HERO */
+  .hero {
+    text-align: center;
+    padding: 56px 20px 36px;
+  }
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--green-light);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--green);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+  .hero h1 span { color: var(--green); }
+  .hero p { color: var(--muted); font-size: 16px; }
+
+  /* CARDS */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 24px;
+    padding: 10px 40px 60px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .product-card {
+    background: var(--white);
+    border-radius: 20px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    border: 1.5px solid var(--border);
+    box-shadow: var(--card-shadow);
+    position: relative;
+  }
+  .product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--card-hover);
+    border-color: #a8d8bc;
+  }
+
+  .card-img-wrap {
+    background: var(--white);
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+    border-bottom: 1.5px solid var(--border);
+    position: relative;
+  }
+  .card-img-wrap svg { width: 100px; height: 80px; opacity: 0.18; }
+
+  .card-room-tag {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: var(--green-light);
+    color: var(--green-text);
+    border: 1px solid var(--green-mid);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+  }
+
+  .card-body {
+    background: var(--white);
+    padding: 20px 22px 22px;
+  }
+  .card-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 3px;
+    line-height: 1.3;
+  }
+  .card-model { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+
+  .card-footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-price {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--green);
+  }
+  .card-cta {
+    background: var(--green-light);
+    color: var(--green-dark);
+    border: 1px solid var(--green-mid);
+    border-radius: 8px;
+    padding: 7px 13px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+  }
+  .card-cta:hover { background: var(--green); color: #fff; }
+
+  /* OVERLAY */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,30,18,0.6);
+    backdrop-filter: blur(2px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .overlay.active { display: flex; }
+
+  .modal {
+    background: var(--white);
+    border-radius: 24px;
+    max-width: 680px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1.5px solid var(--border);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.18);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 26px;
+    border-bottom: 1.5px solid var(--border);
+    background: var(--green-light);
+    border-radius: 22px 22px 0 0;
+  }
+  .modal-header h2 { font-size: 17px; font-weight: 800; color: var(--text); }
+  .close-btn {
+    background: var(--white);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .close-btn:hover { color: var(--text); border-color: #aaa; }
+
+  .modal-body { padding: 26px; }
+
+  .product-detail-img {
+    background: var(--bg);
+    border-radius: 14px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    border: 1.5px solid var(--border);
+  }
+  .product-detail-img svg { width: 120px; height: 96px; opacity: 0.14; }
+
+  .detail-badge {
+    display: inline-block;
+    background: var(--green-light);
+    color: var(--green-text);
+    border: 1px solid var(--green-mid);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+  .detail-title { font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+  .detail-model { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+  .detail-desc { font-size: 14px; color: #4a6655; line-height: 1.75; margin-bottom: 20px; }
+
+  .specs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .spec-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 14px;
+  }
+  .spec-label { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .spec-value { font-size: 13px; font-weight: 700; color: var(--text); }
+
+  .detail-price { font-size: 30px; font-weight: 800; color: var(--green); margin-bottom: 16px; }
+
+  .qty-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .qty-label { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .qty-control { display: flex; align-items: center; gap: 8px; }
+  .qty-btn {
+    background: var(--green-light);
+    border: 1px solid var(--green-mid);
+    color: var(--green-dark);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    font-weight: 700;
+  }
+  .qty-btn:hover { background: var(--green); color: #fff; }
+  .qty-display { font-size: 15px; font-weight: 700; min-width: 28px; text-align: center; color: var(--text); }
+
+  .add-cart-btn {
+    width: 100%;
+    background: var(--green);
+    color: #fff;
+    border: none;
+    padding: 15px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.18s, transform 0.1s;
+    letter-spacing: 0.3px;
+  }
+  .add-cart-btn:hover { background: var(--green-dark); }
+  .add-cart-btn:active { transform: scale(0.98); }
+
+  /* CART PANEL */
+  .cart-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 290;
+  }
+  .cart-backdrop.active { display: block; }
+
+  .cart-panel {
+    display: none;
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 420px;
+    background: var(--white);
+    border-left: 1.5px solid var(--border);
+    z-index: 300;
+    flex-direction: column;
+    box-shadow: -8px 0 40px rgba(0,0,0,0.12);
+  }
+  .cart-panel.active { display: flex; }
+
+  .cart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1.5px solid var(--border);
+    background: var(--green-light);
+  }
+  .cart-header h2 { font-size: 17px; font-weight: 800; color: var(--text); }
+
+  .cart-items { flex: 1; overflow-y: auto; padding: 20px 24px; background: var(--white); }
+
+  .cart-item {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cart-item:last-child { border-bottom: none; }
+
+  .cart-item-img {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 68px;
+    height: 68px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cart-item-img svg { width: 36px; height: 28px; opacity: 0.2; }
+
+  .cart-item-info { flex: 1; }
+  .cart-item-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .cart-item-model { font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+  .cart-item-price { font-size: 14px; font-weight: 800; color: var(--green); }
+
+  .remove-item-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 13px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+  }
+  .remove-item-btn:hover { background: #fee; color: #c00; border-color: #f99; }
+
+  .cart-footer {
+    padding: 18px 24px;
+    border-top: 1.5px solid var(--border);
+    background: var(--white);
+  }
+  .cart-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 17px;
+    font-weight: 800;
+    margin-bottom: 14px;
+    color: var(--text);
+  }
+  .cart-total span:last-child { color: var(--green); }
+
+  .checkout-btn {
+    width: 100%;
+    background: var(--green);
+    color: #fff;
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .checkout-btn:hover { background: var(--green-dark); }
+
+  .empty-cart { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-cart-icon { margin-bottom: 12px; opacity: 0.35; }
+
+  /* ORDER FORM */
+  .order-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,30,18,0.65);
+    backdrop-filter: blur(2px);
+    z-index: 400;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .order-overlay.active { display: flex; }
+
+  .order-modal {
+    background: var(--white);
+    border-radius: 24px;
+    max-width: 560px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1.5px solid var(--border);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.2);
+  }
+
+  .form-group { margin-bottom: 14px; }
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 10px 13px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: inherit;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(28,122,68,0.12);
+  }
+  .form-group textarea { resize: vertical; min-height: 76px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .order-summary {
+    background: var(--green-light);
+    border: 1px solid var(--green-mid);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+  }
+  .order-summary h4 {
+    font-size: 11px;
+    color: var(--green-text);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .order-summary-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: 5px;
+    color: var(--text);
+  }
+  .order-summary-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 15px;
+    font-weight: 800;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--green-mid);
+    color: var(--text);
+  }
+  .order-summary-total span:last-child { color: var(--green); }
+
+  .place-order-btn {
+    width: 100%;
+    background: var(--green);
+    color: #fff;
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .place-order-btn:hover { background: var(--green-dark); }
+  .place-order-btn:disabled { background: #aaa; cursor: not-allowed; }
+
+  .form-error { color: #c0392b; font-size: 13px; margin-bottom: 12px; display: none; background: #fee; border: 1px solid #fcc; border-radius: 8px; padding: 8px 12px; }
+
+  /* SUCCESS */
+  .success-screen { display: none; text-align: center; padding: 50px 30px; }
+  .success-screen.active { display: block; }
+  .success-icon { margin-bottom: 16px; display: flex; justify-content: center; }
+  .success-screen h3 { font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+  .success-screen p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+  /* CAMERA SVG ICON (inline reusable) */
+  .cam-svg { display: block; width: 100%; height: 100%; }
+
+  @media (max-width: 640px) {
+    .cards-grid { padding: 10px 16px 40px; gap: 16px; }
+    .hero h1 { font-size: 28px; }
+    .cart-panel { width: 100%; }
+    .form-row { grid-template-columns: 1fr; }
+    .specs-grid { grid-template-columns: 1fr; }
+    #cart-fab { top: 14px; right: 14px; padding: 10px 16px; }
+  }
+
+#chat-widget {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  font-family: inherit;
+}
+
+#chat-toggle-btn {
+  width: 55px;
+  height: 55px;
+  background: #0d3328;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+#chat-box {
+  width: 320px;
+  height: 420px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  position: absolute;
+  bottom: 70px;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#chat-header {
+  background: #0d3328;
+  color: white;
+  padding: 12px 16px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#chat-messages {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  font-size: 14px;
+  background: #f9f9f7;
+}
+
+.chat-msg {
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  max-width: 80%;
+  line-height: 1.4;
+}
+
+.chat-msg.user {
+  background: #0d3328;
+  color: white;
+  margin-left: auto;
+}
+
+.chat-msg.bot {
+  background: #eee;
+  color: #222;
+}
+
+#chat-input-row {
+  display: flex;
+  border-top: 1px solid #ddd;
+}
+
+#chat-input {
+  flex: 1;
+  border: none;
+  padding: 10px;
+  font-size: 14px;
+  outline: none;
+}
+
+#chat-input-row button {
+  background: #c9a455;
+  color: white;
+  border: none;
+  padding: 0 16px;
+  cursor: pointer;
+  font-weight: 600;
+}
+#chat-widget {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  font-family: inherit;
+}
+
+#chat-toggle-btn {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(145deg, #e8f4fb, #cfeaf7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2), inset 0 0 8px rgba(255,255,255,0.6);
+  border: 2px solid #0d3328;
+  animation: floatBot 3s ease-in-out infinite;
+  transition: transform 0.2s ease;
+}
+
+#chat-toggle-btn:hover {
+  transform: scale(1.08);
+}
+
+@keyframes floatBot {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+#chat-box {
+  width: 320px;
+  height: 420px;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.22);
+  position: absolute;
+  bottom: 75px;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #eee;
+}
+
+#chat-header {
+  background: #0d3328;
+  color: #f5efe0;
+  padding: 12px 16px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#chat-messages {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  font-size: 14px;
+  background: #f9f9f7;
+}
+
+.chat-msg {
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  max-width: 80%;
+  line-height: 1.4;
+}
+
+.chat-msg.user {
+  background: #0d3328;
+  color: white;
+  margin-left: auto;
+}
+
+.chat-msg.bot {
+  background: #eee;
+  color: #222;
+}
+
+#chat-input-row {
+  display: flex;
+  border-top: 1px solid #ddd;
+}
+
+#chat-input {
+  flex: 1;
+  border: none;
+  padding: 10px;
+  font-size: 14px;
+  outline: none;
+}
+
+#chat-input-row button {
+  background: #c9a455;
+  color: white;
+  border: none;
+  padding: 0 16px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+#chat-input-row button:hover {
+  background: #b8933f;
+}
+</style>
+</head>
+<body>
+<!-- Chat Widget -->
+<div id="chat-widget">
+  <div id="chat-toggle-btn" onclick="toggleChat()">🤖</div>
+  <div id="chat-box" style="display:none;">
+    <div id="chat-header">
+      Freshroots Support
+      <span onclick="toggleChat()" style="cursor:pointer;">✕</span>
+    </div>
+    <div id="chat-messages"></div>
+    <div id="chat-input-row">
+      <input type="text" id="chat-input" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
+      <button onclick="sendChatMessage()">Send</button>
+    </div>
+  </div>
+</div>
+<!-- FLOATING CART -->
+<button id="cart-fab" onclick="toggleCart()">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="9" cy="21" r="1.2"/><circle cx="20" cy="21" r="1.2"/>
+    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+  </svg>
+  Cart <span id="cart-count">0</span>
+</button>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+    Freshroots Technologies
+  </div>
+  <h1>Recommended <span>Setup</span></h1>
+  <p>Click any product card to view details and add to cart</p>
+</div>
+
+<!-- CARDS GRID -->
+<div class="cards-grid" id="cards-grid"></div>
+
+<!-- PRODUCT DETAIL MODAL -->
+<div class="overlay" id="product-overlay" onclick="closeProductModal(event)">
+  <div class="modal" id="product-modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Product Details</h2>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- CART BACKDROP -->
+<div class="cart-backdrop" id="cart-backdrop" onclick="toggleCart()"></div>
+
+<!-- CART PANEL -->
+<div class="cart-panel" id="cart-panel">
+  <div class="cart-header">
+    <h2>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px" aria-hidden="true">
+        <circle cx="9" cy="21" r="1.2"/><circle cx="20" cy="21" r="1.2"/>
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+      </svg>Your Cart
+    </h2>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span id="session-tag" style="font-size:10px;font-weight:700;background:#d0eddb;color:#0f4424;padding:3px 8px;border-radius:20px;letter-spacing:0.5px;" title="Your private session ID"></span>
+      <button class="close-btn" onclick="toggleCart()">✕</button>
+    </div>
+  </div>
+  <div class="cart-items" id="cart-items-list"></div>
+  <div class="cart-footer" id="cart-footer" style="display:none">
+    <div class="cart-total">
+      <span>Total</span>
+      <span id="cart-total-price">₹0</span>
+    </div>
+    <button class="checkout-btn" onclick="openOrderForm()">
+      Proceed to Order
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-left:6px" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ORDER OVERLAY -->
+<div class="order-overlay" id="order-overlay" onclick="closeOrderOverlay(event)">
+  <div class="order-modal" id="order-modal">
+    <div class="modal-header">
+      <h2>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px" aria-hidden="true">
+          <path d="M16.5 9.4 7.55 4.24"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>Place Your Order
+      </h2>
+      <button class="close-btn" onclick="closeOrder()">✕</button>
+    </div>
+    <div class="modal-body" id="order-body">
+      <div id="order-form-content">
+        <div class="order-summary" id="order-summary"></div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>First Name *</label>
+            <input type="text" id="fname" placeholder="John" />
+          </div>
+          <div class="form-group">
+            <label>Last Name *</label>
+            <input type="text" id="lname" placeholder="Doe" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Email Address *</label>
+          <input type="email" id="email" placeholder="john@company.com" />
+        </div>
+        <div class="form-group">
+          <label>Phone Number *</label>
+          <input type="tel" id="phone" placeholder="+91 00000 00000" />
+        </div>
+        <div class="form-group">
+          <label>Company / Organisation</label>
+          <input type="text" id="company" placeholder="Acme Corp" />
+        </div>
+        <div class="form-group">
+          <label>Delivery Address *</label>
+          <textarea id="address" placeholder="Street, City, State, PIN, Country"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Country *</label>
+            <select id="country">
+              <option value="">Select country</option>
+              <option selected>India</option>
+              <option>United States</option>
+              <option>United Kingdom</option>
+              <option>Canada</option>
+              <option>Australia</option>
+              <option>Germany</option>
+              <option>France</option>
+              <option>Singapore</option>
+              <option>UAE</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Installation Required?</label>
+            <select id="installation">
+              <option value="No">No – self install</option>
+              <option value="Yes">Yes – professional install</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Additional Notes</label>
+          <textarea id="notes" placeholder="Special requirements, preferred delivery date, etc."></textarea>
+        </div>
+
+        <div class="form-error" id="form-error"></div>
+
+        <button class="place-order-btn" id="place-btn" onclick="placeOrder()">
+          Place Order
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-left:6px" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+
+      <div class="success-screen" id="success-screen">
+        <div class="success-icon">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#1c7a44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" fill="#e8f5ee" stroke="#1c7a44"/>
+            <polyline points="9 12 11 14 15 10" stroke="#1c7a44" stroke-width="2.5"/>
+          </svg>
+        </div>
+        <h3>Order Placed!</h3>
+        <p>Thank you! Your order confirmation has been sent to our team.<br>We will contact you within 24 hours.</p>
+        <br>
+        <button class="checkout-btn" onclick="closeOrder(); resetCart();" style="max-width:200px; margin:0 auto; display:block;">Done</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const camIcon = `<svg viewBox="0 0 64 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="4" y="12" width="56" height="32" rx="5" fill="#1c7a44"/>
+  <circle cx="32" cy="28" r="10" fill="white" opacity="0.9"/>
+  <circle cx="32" cy="28" r="6" fill="#1c7a44"/>
+  <rect x="22" y="6" width="20" height="8" rx="3" fill="#1c7a44"/>
+  <circle cx="50" cy="18" r="3" fill="white" opacity="0.6"/>
+</svg>`;
+
+const products = [
+  {
+    id: 1,
+    sku: "HUDDLE-UVC40E2",
+    label: "Huddle Room",
+    title: "UVC40E2 ",
+    model: "Yealink UVC40E2 Kit",
+    price: 70000,
+    image: "images/Huddle Room.png",
+    description: "The perfect all-in-one video conferencing solution for small huddle rooms. The UVC40E2 features a built-in 4K camera, speaker, and microphone in a sleek soundbar form factor. ",
+    specs: [
+      { label: "Camera", value: "8 megapixels" },
+      { label: "Microphone", value: "8-mic array" },
+      { label: "Coverage", value: "4 to 6 people" },
+      { label: "Connection", value: "USB + HDMI" },
+      { label: "AI Framing", value: "Yes" },
+      { label: "Noise Cancel", value: "Built-in" }
+    ]
+  },
+  {
+    id: 2,
+    sku: "SMALL-SV40",
+    label: "Small Room",
+    title: "SV40 ",
+    model: "Yealink SV40 Kit",
+    price: 160000,
+    image: "images/small room.png",
+    description: "Designed for small meeting rooms, the SV40 video bar delivers crystal-clear 4K video with an AI-powered camera. Multi-platform support for Teams, Zoom, and more.",
+    specs: [
+      { label: "Camera", value: "48mp *@  / 120° FOV" },
+      { label: "Audio", value: "Full-duplex" },
+      { label: "Coverage", value: "Up to 10 people" },
+      { label: "Wireless Share", value: "WPP30" },
+      { label: "Platform", value: "Teams / Zoom" },
+      { label: "Setup", value: "Plug & Play" }
+    ]
+  },
+  {
+    id: 3,
+    sku: "MEDIUM-A50PRO",
+    label: "Medium Room",
+    title: "A50 USB / WPP30 + CTP25",
+    model: "Yealink A50 Pro Kit",
+    price: 500000,
+    image: "images/image3.png",
+    description: "A professional video conferencing system for medium-sized conference rooms. The UVC85 PTZ camera delivers stunning 4K60fps video with 12x optical zoom, while the CP50 speakerphone provides full-room audio coverage.",
+    specs: [
+      { label: "Camera", value: "50mp*3" },
+      { label: "Speakerphone", value: "CP50 360°" },
+      { label: "Coverage", value: "12 to 15 people" },
+      { label: "Connection", value: "WPP30 / HDMI 2.0" },
+      { label: "AI Tracking", value: "Speaker track" },
+      { label: "Noise Cancel", value: "AI-powered" }
+    ]
+  },
+  {
+    id: 4,
+    sku: "LARGE-A50ENT",
+    label: "Large Room",
+    title: "Meeting Board / SV80+ CM20+CS10",
+    model: "Yealink A50 Enterprise Kit",
+    price: 700000,
+    image: "images/image 4.png",
+    description: "Enterprise-grade conferencing for large boardrooms and auditoriums. The SV80+ video bar with dual-lens combines with CM20 ceiling microphones and CS10 speakers for unmatched coverage across large spaces.",
+    specs: [
+      { label: "Camera", value: "Tripal Camera setup 50 mp" },
+      { label: "Microphone", value: "CM20 Ceiling" },
+      { label: "Coverage", value: "50+ people" },
+      { label: "Speakers", value: "CS10 Ceiling" },
+      { label: "AI Features", value: "Director mode" },
+      { label: "Integration", value: "Full UC system" }
+    ]
+  },
+  {
+    id: 5,
+    sku: "BOARD-PRO",
+    label: "Meeting Board",
+    title: "Meeting Board Pro",
+    model: "65,75,86 inch",
+    price: 1200000,
+    image: "images/pic5.jpg",
+    description: "An interactive display built for presentations and wireless screen sharing in any size room. The Meeting Board Pro combines a high-resolution touchscreen with built-in whiteboarding, multi-device casting, and one-tap connectivity to Teams, Zoom, and other platforms — making it equally at home in a small huddle space or a large boardroom.",
+    specs: [
+      { label: "Display", value: "65 / 75 / 86 inch" },
+      { label: "Touch", value: "Multi-touch interactive" },
+      { label: "Sharing", value: "Wireless screen cast" },
+      { label: "Whiteboard", value: "Built-in annotation" },
+      { label: "Platform", value: "Teams / Zoom / BYOD" },
+      { label: "Setup", value: "Plug & Play" }
+    ]
+  },
+  {
+  id: 6,
+  sku: "A25-MEETINGBAR",
+  label: "Video Conferencing",
+  title: " MeetingBar A25",
+  model: "A25",
+  price: 212718, // Update with your selling price
+  image: "images/Huddle Room.png",
+  description: "The Yealink MeetingBar A25 is an all-in-one Android video collaboration bar designed for small meeting rooms and huddle spaces. It features a high-quality AI-powered camera, built-in microphone array, stereo speakers, and native Microsoft Teams and Zoom support. With plug-and-play deployment, wireless content sharing, and intelligent video features such as auto framing and speaker tracking, the A25 delivers a seamless meeting experience without requiring a separate PC.",
+  specs: [
+    { label: "Camera", value: "4K AI Camera" },
+    { label: "Field of View", value: "120° Wide Angle" },
+    { label: "Microphones", value: "Built-in MEMS Microphone Array" },
+    { label: "Speakers", value: "Integrated Stereo Speakers" },
+    { label: "AI Features", value: "Auto Framing, Speaker Tracking" },
+    { label: "Platform", value: "Microsoft Teams & Zoom" },
+    { label: "Content Sharing", value: "Wireless Presentation" },
+    { label: "Operating System", value: "Android" },
+    { label: "Connectivity", value: "Wi-Fi, Bluetooth, HDMI, USB" },
+    { label: "Deployment", value: "Plug & Play" }
+  ]
+},
+{
+  id: 7,
+  sku: "A40-MEETINGBAR",
+  label: "Video Conferencing",
+  title: " MeetingBar A40",
+  model: "A40",
+  price: 400000, // Update with your selling price
+  image: "/images/image8.jpg",
+  description: "The Yealink MeetingBar A40 is an all-in-one Android video collaboration bar designed for small to medium-sized meeting rooms. It features dual 48MP AI-powered cameras with a 120° ultra-wide field of view, delivering crystal-clear 4K video. Equipped with an 8-MEMS microphone array, stereo speakers, and intelligent AI capabilities such as Auto Framing, Speaker Tracking, IntelliFocus, and Noise Cancellation, the A40 provides an immersive meeting experience. Native support for Microsoft Teams and Zoom, along with BYOD mode and a one-cable deployment solution, makes installation and collaboration effortless.",
+
+  specs: [
+    { label: "Camera", value: "Dual 48MP AI Cameras" },
+    { label: "Resolution", value: "4K Ultra HD (Up to 60fps)" },
+    { label: "Field of View", value: "120° Ultra-Wide" },
+    { label: "Microphones", value: "8-MEMS Microphone Array" },
+    { label: "Voice Pickup", value: "Up to 6m" },
+    { label: "Speakers", value: "Dual 10W Stereo Speakers" },
+    { label: "AI Features", value: "Auto Framing, Speaker Tracking, IntelliFocus, Smart Gallery" },
+    { label: "Platform", value: "Microsoft Teams, Zoom & BYOD" },
+    { label: "Connectivity", value: "USB-C, HDMI, Wi-Fi 6, Bluetooth 5.0, RJ45" },
+    { label: "Operating System", value: "Android 13" },
+    { label: "Deployment", value: "One-Cable Plug & Play" }
+  ]
+},
+{
+  id: 8,
+  sku: "CTP25",
+  label: "Touch Console",
+  title: " CTP25 Touch Console",
+  model: "CTP25",
+  price: 100000, // Update with your selling price
+  image: "/images/image9.webp",
+  description: "The Yealink CTP25 is a 10.1-inch intelligent touch console designed for effortless meeting control in Microsoft Teams Rooms and Zoom Rooms. It provides a user-friendly interface to start, join, and manage meetings with a single touch. Featuring a high-definition IPS touchscreen, Android 13, USB-C BYOD support, Wi-Fi 6, Bluetooth 5.0, and multiple mounting options, the CTP25 delivers an intuitive collaboration experience while seamlessly integrating with Yealink MeetingBars such as the A40 and MeetingEye series.",
+  specs: [
+    { label: "Display", value: "10.1-inch IPS Touchscreen" },
+    { label: "Resolution", value: "1280 × 800 HD" },
+    { label: "Touch", value: "Capacitive Multi-Touch" },
+    { label: "Operating System", value: "Android 13" },
+    { label: "Content Sharing", value: "USB-C BYOD & 4K Content Sharing" },
+    { label: "Connectivity", value: "Wi-Fi 6, Bluetooth 5.0, RJ45 PoE" },
+    { label: "Platform", value: "Microsoft Teams & Zoom Rooms" },
+    { label: "Mounting", value: "Tabletop, Wall Mount, Desktop Stand" },
+    { label: "Power", value: "PoE or 65W USB-C PD Adapter" },
+    { label: "Compatibility", value: "Yealink MeetingBar A40, MeetingEye Series" }
+  ]
+},
+{
+  id: 9,
+  sku: "WPP30",
+  label: "Wireless Presentation Pod",
+  title: "WPP30",
+  model: "WPP30",
+  price: 45000, // Update with your selling price
+  image: "/images/image10.jpg",
+  description: "The Yealink WPP30 is a 4K wireless presentation pod designed to make content sharing fast and effortless in modern meeting rooms. Simply connect the device via USB-C to your laptop and press the presentation button to wirelessly share your screen with compatible Yealink MeetingBars and MeetingBoard devices. With plug-and-play operation, low-latency transmission, and support for high-resolution content, the WPP30 enables secure and seamless collaboration without requiring software installation.",
+  specs: [
+    { label: "Device Type", value: "Wireless Presentation Pod" },
+    { label: "Video Output", value: "Up to 4K Ultra HD" },
+    { label: "Connection", value: "USB-C Plug & Play" },
+    { label: "Screen Sharing", value: "One-Touch Wireless Presentation" },
+    { label: "Latency", value: "Low-Latency Wireless Transmission" },
+    { label: "Compatibility", value: "Yealink MeetingBar & MeetingBoard Series" },
+    { label: "Security", value: "Secure Wireless Content Sharing" },
+    { label: "Driver", value: "No Software Installation Required" },
+    { label: "Power", value: "USB-C Powered" },
+    { label: "Deployment", value: "Plug & Play" }
+  ]
+},
+{
+  id: 10,
+  sku: "MCORE-KIT",
+  label: "Microsoft Teams Room",
+  title: "MCore Kit",
+  model: "MCore Kit",
+  price: 300300, // Update with your selling price
+  image: "/images/image11.png",
+  description: "The Yealink MCore Kit is the core foundation of Yealink's Microsoft Teams Rooms on Windows solution. It combines the powerful MCore 4 mini-PC with the MTouch Plus touch controller, providing an intelligent and flexible meeting room deployment platform. Powered by the Intel® Core™ Ultra 5 processor with AI acceleration, the MCore Kit delivers smooth Teams meetings, 4K content sharing, multiple display support, and simplified room control for conference rooms of all sizes.",
+  specs: [
+    { label: "System", value: "Microsoft Teams Rooms on Windows" },
+    { label: "Mini PC", value: "MCore 4 (Intel Core Ultra 5)" },
+    { label: "Touch Console", value: "MTouch Plus 11.6-inch" },
+    { label: "Processor", value: "Intel® Core™ Ultra 5 with AI NPU" },
+    { label: "Content Sharing", value: "4K HDMI Input & Wireless Sharing" },
+    { label: "Display Support", value: "Up to 3 Displays" },
+    { label: "Connectivity", value: "HDMI, USB 3.0, Ethernet, Wi-Fi 6, Bluetooth 5.2" },
+    { label: "Platform", value: "Microsoft Teams Rooms" },
+    { label: "Room Size", value: "Small, Medium & Large Rooms" },
+    { label: "Deployment", value: "Flexible Wall, Table & Behind-Display Mounting" }
+  ]
+},
+{
+  id: 11,
+  sku: "VCM36-W",
+  label: "Wireless Microphone",
+  title: "VCM36-W",
+  model: "VCM36-W",
+  price: 37543, // Update with your selling price
+  image: "/images/image12.png",
+  description: "The Yealink VCM36-W is a wireless expansion microphone designed for Yealink video conferencing systems. Featuring a built-in three-microphone array, 360° voice pickup, and a 6-meter capture range, it delivers crystal-clear audio for medium and large meeting rooms. With full-duplex technology, Noise Proof Technology, acoustic echo cancellation, Wi-Fi connectivity, and plug-and-play pairing, the VCM36-W ensures every participant is heard clearly while providing a clean, cable-free meeting room experience.",
+  specs: [
+    { label: "Type", value: "Wireless Expansion Microphone" },
+    { label: "Voice Pickup", value: "360° Omnidirectional, Up to 6m (20ft)" },
+    { label: "Microphone Array", value: "Built-in 3-Microphone Array" },
+    { label: "Audio Features", value: "HD Voice, Full-Duplex, Echo Cancellation, Noise Proof" },
+    { label: "Connectivity", value: "Dual-Band Wi-Fi (2.4GHz & 5GHz)" },
+    { label: "Mute Control", value: "Capacitive Touch Mute Button" },
+    { label: "Battery", value: "Up to 12 Hours Talk Time, 7 Days Standby" },
+    { label: "Charging", value: "USB Charging Cradle" },
+    { label: "Compatibility", value: "Yealink MeetingBar, MVC Series & MeetingBoard" },
+    { label: "Deployment", value: "Wireless Plug & Play" }
+  ]
+},
+{
+  id: 12,
+  sku: "CM20",
+  label: "Ceiling Microphone",
+  title: "CM20 Ceiling Microphone",
+  model: "CM20",
+  price: 137643, // Update with your selling price
+  image: "/images/image14.webp",
+  description: "The Yealink CM20 is an AI-powered beamforming ceiling microphone designed for medium and large meeting rooms. Equipped with 16 omnidirectional microphones and an integrated DSP, it delivers crystal-clear voice pickup with intelligent beamforming, AI Dynamic Noise Reduction, AI Reverberation Suppression, and acoustic echo cancellation. The CM20 provides seamless plug-and-play integration with Yealink MVC systems, eliminating the need for external DSP while offering flexible ceiling installation options for a clean and professional meeting room experience.",
+  specs: [
+    { label: "Type", value: "AI-Powered Ceiling Microphone" },
+    { label: "Microphone Array", value: "16 Omnidirectional Microphones" },
+    { label: "Voice Pickup", value: "360° Coverage, Up to 4m Radius" },
+    { label: "Audio Features", value: "Beamforming, AI Noise Reduction, AI Reverberation Suppression, Echo Cancellation" },
+    { label: "DSP", value: "Built-in Digital Signal Processor" },
+    { label: "Connectivity", value: "RJ45, PoE (IEEE 802.3af)" },
+    { label: "Frequency Response", value: "120Hz – 16kHz" },
+    { label: "Compatibility", value: "Yealink MVC Series & Pro AV Solutions" },
+    { label: "Installation", value: "In-Ceiling, On-Ceiling, Pendant & Suspension Mount" },
+    { label: "Deployment", value: "Plug & Play" }
+  ]
+},
+{
+  id: 13,
+  sku: "CS10",
+  label: "Ceiling Speaker",
+  title: " CS10 Ceiling Speaker",
+  model: "CS10",
+  price: 65065, // Update with your selling price
+  image: "/images/image15.webp",
+  description: "The Yealink CS10 is a premium 2-way coaxial ceiling speaker designed specifically for modern conference rooms. Featuring a high-performance 5.7-inch woofer, 1.1-inch tweeter, and integrated PoE-powered active audio, it delivers crystal-clear speech and immersive sound for video conferencing. Optimized for Microsoft Teams Rooms and Yealink Pro AV solutions, the CS10 offers a sleek low-profile design, wide 120° sound coverage, and flexible ceiling installation, making it the ideal audio solution for professional meeting spaces.",
+  specs: [
+    { label: "Type", value: "2-Way Coaxial Ceiling Speaker" },
+    { label: "Woofer", value: "5.7-inch (145mm)" },
+    { label: "Tweeter", value: "1.1-inch (28mm)" },
+    { label: "Frequency Response", value: "100Hz – 20kHz" },
+    { label: "Maximum SPL", value: "99dB @20W, 1m" },
+    { label: "Coverage Angle", value: "120°" },
+    { label: "Power", value: "PoE+ (IEEE 802.3at)" },
+    { label: "Connectivity", value: "RJ45 Ethernet" },
+    { label: "Compatibility", value: "Yealink MVC, MeetingBar, MeetingBoard & Pro AV Systems" },
+    { label: "Installation", value: "Ceiling Mount, Low-Profile Design" }
+  ]
+}
+];
+
+
+// ─── PER-USER SESSION CART ────────────────────────────────────────────────────
+// Each browser tab/window gets a unique SESSION_ID on first load.
+// The cart is stored in sessionStorage under that ID.
+// sessionStorage is 100% private per tab — User A cannot see User B's cart.
+// Closing the tab clears the session. Refreshing keeps it alive.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function initSession() {
+  let sid = sessionStorage.getItem('freshroots_session_id');
+  if (!sid) {
+    sid = 'user_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    sessionStorage.setItem('freshroots_session_id', sid);
+  }
+  return sid;
+}
+
+const SESSION_ID = initSession();
+const CART_KEY   = 'cart_' + SESSION_ID;
+
+function saveCart(cartData) {
+  // Intentionally not persisted across page loads: a refresh should
+  // always start with an empty cart, so we don't write to storage
+  // that gets read back in on the next load.
+}
+
+// Clear out any cart data left over from a previous version of this
+// page so nothing old resurfaces.
+sessionStorage.removeItem(CART_KEY);
+
+let cart = [];
+let currentProduct = null;
+let modalQty = 1;
+
+function formatINR(n) {
+  return n.toLocaleString('en-IN');
+}
+
+function cardImg(p, size) {
+  if (p.image) {
+    return `<img src="${p.image}" alt="${p.title}" style="max-height:${size}px;max-width:100%;object-fit:contain;display:block;margin:auto;" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+            <div style="display:none">${camIcon}</div>`;
+  }
+  return camIcon;
+}
+
+function renderCards() {
+  const grid = document.getElementById('cards-grid');
+  grid.innerHTML = products.map(p => `
+    <div class="product-card" onclick="openProduct(${p.id})">
+      <div class="card-img-wrap">
+        <div class="card-room-tag">${p.label}</div>
+        ${cardImg(p, 150)}
+      </div>
+      <div class="card-body">
+        <div class="card-title">${p.title}</div>
+        <div class="card-model">${p.model}</div>
+        <div class="card-footer-row">
+          <div class="card-price">₹${formatINR(p.price)}</div>
+          <div class="card-cta">View Details </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openProduct(id) {
+  currentProduct = products.find(p => p.id === id);
+  modalQty = 1;
+  document.getElementById('modal-title').textContent = currentProduct.title;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="product-detail-img">${cardImg(currentProduct, 180)}</div>
+    <div class="detail-badge">${currentProduct.label}</div>
+    <div class="detail-title">${currentProduct.title}</div>
+    <div class="detail-model">${currentProduct.model}</div>
+    <div class="detail-desc">${currentProduct.description}</div>
+    <div class="specs-grid">
+      ${currentProduct.specs.map(s => `
+        <div class="spec-item">
+          <div class="spec-label">${s.label}</div>
+          <div class="spec-value">${s.value}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="detail-price">₹${formatINR(currentProduct.price)}</div>
+    <div class="qty-row">
+      <span class="qty-label">Qty:</span>
+      <div class="qty-control">
+        <button class="qty-btn" onclick="changeQty(-1)">−</button>
+        <span class="qty-display" id="modal-qty">1</span>
+        <button class="qty-btn" onclick="changeQty(1)">+</button>
+      </div>
+    </div>
+    <button class="add-cart-btn" onclick="addToCart()">Add to Cart →</button>
+  `;
+  document.getElementById('product-overlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function changeQty(delta) {
+  modalQty = Math.max(1, modalQty + delta);
+  document.getElementById('modal-qty').textContent = modalQty;
+}
+
+function closeModal() {
+  document.getElementById('product-overlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function closeProductModal(e) {
+  if (e.target === document.getElementById('product-overlay')) closeModal();
+}
+
+function addToCart() {
+  const existing = cart.find(i => i.id === currentProduct.id);
+  if (existing) existing.qty += modalQty;
+  else cart.push({ ...currentProduct, qty: modalQty });
+  saveCart(cart);
+  updateCartUI();
+  closeModal();
+  flashCartBtn();
+}
+
+function flashCartBtn() {
+  const btn = document.getElementById('cart-fab');
+  btn.style.background = '#155c33';
+  btn.style.transform = 'scale(1.1)';
+  setTimeout(() => { btn.style.background = ''; btn.style.transform = ''; }, 500);
+}
+
+function updateCartUI() {
+  const total = cart.reduce((s, i) => s + i.qty, 0);
+  document.getElementById('cart-count').textContent = total;
+
+  const list = document.getElementById('cart-items-list');
+  const footer = document.getElementById('cart-footer');
+
+  if (cart.length === 0) {
+    list.innerHTML = `<div class="empty-cart"><div class="empty-cart-icon"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#1c7a44" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.2"/><circle cx="20" cy="21" r="1.2"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div><p>Your cart is empty</p></div>`;
+    footer.style.display = 'none';
+    return;
+  }
+
+  footer.style.display = 'block';
+  list.innerHTML = cart.map(item => `
+    <div class="cart-item">
+      <div class="cart-item-img">${cardImg(item, 60)}</div>
+      <div class="cart-item-info">
+        <div class="cart-item-name">${item.title}</div>
+        <div class="cart-item-model">${item.label} · Qty: ${item.qty}</div>
+        <div class="cart-item-price">₹${formatINR(item.price * item.qty)}</div>
+      </div>
+      <button class="remove-item-btn" onclick="removeItem(${item.id})">✕</button>
+    </div>
+  `).join('');
+
+  const grandTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  document.getElementById('cart-total-price').textContent = `₹${formatINR(grandTotal)}`;
+}
+
+function removeItem(id) {
+  cart = cart.filter(i => i.id !== id);
+  saveCart(cart);
+  updateCartUI();
+}
+
+function toggleCart() {
+  const panel = document.getElementById('cart-panel');
+  const backdrop = document.getElementById('cart-backdrop');
+  panel.classList.toggle('active');
+  backdrop.classList.toggle('active');
+  updateCartUI();
+}
+
+function openOrderForm() {
+  const grandTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  document.getElementById('order-summary').innerHTML = `
+    <h4>Order Summary</h4>
+    ${cart.map(i => `<div class="order-summary-item"><span>${i.title} × ${i.qty}</span><span>₹${formatINR(i.price * i.qty)}</span></div>`).join('')}
+    <div class="order-summary-total"><span>Total</span><span>₹${formatINR(grandTotal)}</span></div>
+  `;
+  document.getElementById('order-overlay').classList.add('active');
+  document.getElementById('success-screen').classList.remove('active');
+  document.getElementById('order-form-content').style.display = 'block';
+  document.getElementById('form-error').style.display = 'none';
+  document.getElementById('place-btn').disabled = false;
+  document.getElementById('place-btn').innerHTML = 'Place Order <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-left:6px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
+}
+
+function closeOrder() { document.getElementById('order-overlay').classList.remove('active'); }
+function closeOrderOverlay(e) { if (e.target === document.getElementById('order-overlay')) closeOrder(); }
+
+function resetCart() {
+  cart = [];
+  sessionStorage.removeItem(CART_KEY);
+  updateCartUI();
+  document.getElementById('cart-panel').classList.remove('active');
+  document.getElementById('cart-backdrop').classList.remove('active');
+}
+
+function showSuccess() {
+  document.getElementById('order-form-content').style.display = 'none';
+  document.getElementById('success-screen').classList.add('active');
+}
+
+function placeOrder() {
+  const fname = document.getElementById('fname').value.trim();
+  const lname = document.getElementById('lname').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const address = document.getElementById('address').value.trim();
+  const country = document.getElementById('country').value;
+  const company = document.getElementById('company').value.trim();
+  const installation = document.getElementById('installation').value;
+  const notes = document.getElementById('notes').value.trim();
+  const errEl = document.getElementById('form-error');
+
+  if (!fname || !lname || !email || !phone || !address || !country) {
+    errEl.textContent = 'Please fill in all required fields marked with *.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errEl.textContent = 'Please enter a valid email address.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const btn = document.getElementById('place-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  const grandTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const itemsList = cart.map(i => `• ${i.title} (${i.label}) × ${i.qty} — ₹${formatINR(i.price * i.qty)}`).join('\n');
+
+  const templateParams = {
+    to_email:     'neelaveni8494@gmail.com',
+    from_name:    `${fname} ${lname}`,
+    from_email:   email,
+    phone:        phone,
+    company:      company || 'N/A',
+    country:      country,
+    address:      address,
+    installation: installation,
+    order_items:  itemsList,
+    order_total:  `₹${formatINR(grandTotal)}`,
+    notes:        notes || 'None'
+  };
+
+  const keysConfigured = EMAILJS_PUBLIC_KEY  !== 'YOUR_PUBLIC_KEY'
+                      && EMAILJS_SERVICE_ID  !== 'YOUR_SERVICE_ID'
+                      && EMAILJS_TEMPLATE_ID !== 'YOUR_TEMPLATE_ID';
+
+  function resetPlaceButton() {
+    btn.disabled = false;
+    btn.innerHTML = `
+        Place Order
+        <svg width="16" height="16" viewBox="0 0 24 24"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="2.5"
+             stroke-linecap="round"
+             stroke-linejoin="round"
+             style="vertical-align:-2px;margin-left:6px">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+    `;
+  }
+
+  if (keysConfigured) {
+    emailjs.send(
+      EMAILJS_SERVICE_ID,
+      EMAILJS_TEMPLATE_ID,
+      templateParams
+    )
+    .then(function (response) {
+      console.log("SUCCESS!", response);
+      showSuccess();
+    })
+    .catch(function (err) {
+      console.error("EmailJS Error:", err);
+      errEl.textContent = 'Something went wrong sending your order. Please try again, or contact us directly.';
+      errEl.style.display = 'block';
+      resetPlaceButton();
+    });
+  } else {
+    errEl.textContent = 'EmailJS is not configured correctly.';
+    errEl.style.display = 'block';
+    resetPlaceButton();
+  }
+}
+
+// Pull the latest prices the admin has published, matched by SKU.
+// If this fails for any reason (Firebase not yet configured, offline,
+// etc.) we simply keep the hardcoded prices above as a safe fallback —
+// the storefront never breaks because of this.
+async function loadLivePrices() {
+  try {
+    const snapshot = await priceDb.collection('prices').get();
+    snapshot.forEach(doc => {
+      const product = products.find(p => p.sku === doc.id);
+      const data = doc.data();
+      if (product && typeof data.price === 'number' && data.price > 0) {
+        product.price = data.price;
+      }
+    });
+  } catch (err) {
+    console.warn('Could not load live prices, using defaults:', err);
+  }
+}
+
+(async function init() {
+  await loadLivePrices();
+  renderCards();
+  updateCartUI();
+  // Show a small session tag in the cart header (last 6 chars of session ID)
+  document.getElementById('session-tag').textContent = '#' + SESSION_ID.slice(-6).toUpperCase();
+})();
+</script>
+</body>
+</html>
