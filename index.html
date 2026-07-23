@@ -27,14 +27,7 @@
 </script>
 <script>
   // ─── EMAILJS CONFIG ───────────────────────────────────────────
-  // 1. Go to https://www.emailjs.com → sign up free
-  // 2. Add a Gmail service → copy the Service ID below
-  // 3. Create an email template → copy the Template ID below
-  // 4. Go to Account → copy your Public Key below
-  // Replace the three placeholder strings and this file is live.
-  const EMAILJS_PUBLIC_KEY  = 'zZdu-rLL0CwV5_Ae2';   // e.g. 'abc123XYZ'
-  const EMAILJS_SERVICE_ID  = 'service_vkdib0b';   // e.g. 'service_abc123'
-  const EMAILJS_TEMPLATE_ID = 'template_pe4tkvv';  // e.g. 'template_xyz789'
+  
   // Template variables to map in EmailJS dashboard:
   // {{from_name}}  {{from_email}}  {{phone}}  {{company}}
   // {{country}}    {{address}}     {{installation}}
@@ -133,6 +126,30 @@
   .hero h1 span { color: var(--green); }
   .hero p { color: var(--muted); font-size: 16px; }
 
+  /* FILTER BAR */
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    padding: 0 20px 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .filter-chip {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    color: var(--green-text);
+    border-radius: 20px;
+    padding: 7px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-chip:hover { border-color: var(--green); }
+  .filter-chip.active { background: var(--green); color: #fff; border-color: var(--green); }
+
   /* CARDS */
   .cards-grid {
     display: grid;
@@ -171,6 +188,14 @@
   }
   .card-img-wrap svg { width: 100px; height: 80px; opacity: 0.18; }
 
+  /* Video preview fit and controls */
+  .media-root { width:100%; height:100%; display:block; }
+  .product-media { width:100%; height:100%; object-fit:contain; display:block; }
+  .inspect-image-wrap video { width:100%; height:100%; object-fit:contain; display:block; }
+  .video-controls-row { margin-top:10px; display:flex; gap:10px; align-items:center; }
+  .share-btn { background: transparent; border: 1.5px solid var(--border); width:44px; height:44px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+  .share-btn svg { width:20px; height:20px; fill: none; }
+
   .card-room-tag {
     position: absolute;
     top: 14px;
@@ -203,11 +228,19 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
   }
   .card-price {
     font-size: 22px;
     font-weight: 800;
     color: var(--green);
+  }
+  .card-btn-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    justify-content: flex-end;
   }
   .card-cta {
     background: var(--green-light);
@@ -221,6 +254,24 @@
     transition: background 0.18s, color 0.18s;
   }
   .card-cta:hover { background: var(--green); color: #fff; }
+
+  .card-inspect {
+    background: var(--white);
+    color: var(--green-dark);
+    border: 1.5px solid var(--green);
+    border-radius: 8px;
+    padding: 7px 13px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    width: 100%;
+    justify-content: center;
+  }
+  .card-inspect:hover { background: var(--green); color: #fff; }
 
   /* OVERLAY */
   .overlay {
@@ -597,6 +648,181 @@
   /* CAMERA SVG ICON (inline reusable) */
   .cam-svg { display: block; width: 100%; height: 100%; }
 
+  /* INSPECT VIEW (product tech-spec style page) */
+  .inspect-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,30,18,0.65);
+    backdrop-filter: blur(2px);
+    z-index: 400;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .inspect-overlay.active { display: flex; }
+
+  .inspect-modal {
+    background: var(--white);
+    border-radius: 20px;
+    max-width: 980px;
+    width: 100%;
+    max-height: 92vh;
+    overflow-y: auto;
+    border: 1.5px solid var(--border);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.2);
+  }
+
+  .inspect-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 28px;
+    border-bottom: 1.5px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--white);
+    border-radius: 20px 20px 0 0;
+    z-index: 2;
+  }
+  .inspect-breadcrumb {
+    font-size: 13px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .inspect-breadcrumb b { color: var(--text); font-weight: 700; }
+  .inspect-breadcrumb .sep { opacity: 0.5; }
+
+  .inspect-tabs {
+    display: flex;
+    gap: 22px;
+  }
+  .inspect-tab {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    padding-bottom: 4px;
+    cursor: default;
+  }
+  .inspect-tab.active {
+    color: var(--green-text);
+    border-bottom: 2.5px solid var(--green);
+  }
+
+  .inspect-body {
+    padding: 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 36px;
+  }
+
+  .inspect-media-col { min-width: 0; }
+  .inspect-image-wrap {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .inspect-image-wrap img { max-width: 88%; max-height: 88%; object-fit: contain; }
+  .inspect-image-wrap svg { width: 140px; height: 110px; opacity: 0.14; }
+
+  .inspect-thumbs { display: flex; gap: 10px; }
+  .inspect-thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .inspect-thumb.active { border-color: var(--green); }
+  .inspect-thumb img { max-width: 70%; max-height: 70%; object-fit: contain; }
+  .inspect-thumb svg { width: 26px; height: 22px; opacity: 0.3; }
+
+  .inspect-info-col { min-width: 0; }
+  .inspect-title { font-size: 28px; font-weight: 800; color: var(--text); line-height: 1.2; margin-bottom: 18px; }
+
+  .inspect-pills { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
+  .inspect-pill {
+    background: var(--green-light);
+    border: 1.5px solid var(--green-mid);
+    color: var(--green-text);
+    border-radius: 24px;
+    padding: 11px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    width: fit-content;
+  }
+  .inspect-pill b { font-weight: 800; }
+
+  .inspect-price-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .inspect-price { font-size: 26px; font-weight: 800; color: var(--green); }
+  .inspect-sku { font-size: 12px; color: var(--muted); }
+
+  .inspect-qty-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .inspect-actions { display: flex; gap: 12px; }
+  .inspect-compare-btn {
+    background: var(--green);
+    color: #fff;
+    border: none;
+    padding: 13px 22px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.18s;
+  }
+  .inspect-compare-btn:hover { background: var(--green-dark); }
+  .inspect-cart-btn {
+    background: var(--white);
+    color: var(--green-dark);
+    border: 1.5px solid var(--green);
+    padding: 13px 22px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+  }
+  .inspect-cart-btn:hover { background: var(--green); color: #fff; }
+
+  .inspect-desc { font-size: 13.5px; color: #4a6655; line-height: 1.7; margin-top: 20px; }
+
+  @media (max-width: 720px) {
+    .inspect-body { grid-template-columns: 1fr; }
+    .inspect-topbar { flex-direction: column; align-items: flex-start; gap: 10px; }
+  }
+
   @media (max-width: 640px) {
     .cards-grid { padding: 10px 16px 40px; gap: 16px; }
     .hero h1 { font-size: 28px; }
@@ -606,100 +832,6 @@
     #cart-fab { top: 14px; right: 14px; padding: 10px 16px; }
   }
 
-#chat-widget {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 1000;
-  font-family: inherit;
-}
-
-#chat-toggle-btn {
-  width: 55px;
-  height: 55px;
-  background: #0d3328;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-}
-
-#chat-box {
-  width: 320px;
-  height: 420px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-  position: absolute;
-  bottom: 70px;
-  right: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-#chat-header {
-  background: #0d3328;
-  color: white;
-  padding: 12px 16px;
-  font-weight: 600;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-#chat-messages {
-  flex: 1;
-  padding: 12px;
-  overflow-y: auto;
-  font-size: 14px;
-  background: #f9f9f7;
-}
-
-.chat-msg {
-  margin-bottom: 10px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  max-width: 80%;
-  line-height: 1.4;
-}
-
-.chat-msg.user {
-  background: #0d3328;
-  color: white;
-  margin-left: auto;
-}
-
-.chat-msg.bot {
-  background: #eee;
-  color: #222;
-}
-
-#chat-input-row {
-  display: flex;
-  border-top: 1px solid #ddd;
-}
-
-#chat-input {
-  flex: 1;
-  border: none;
-  padding: 10px;
-  font-size: 14px;
-  outline: none;
-}
-
-#chat-input-row button {
-  background: #c9a455;
-  color: white;
-  border: none;
-  padding: 0 16px;
-  cursor: pointer;
-  font-weight: 600;
-}
 #chat-widget {
   position: fixed;
   bottom: 20px;
@@ -810,9 +942,363 @@
 #chat-input-row button:hover {
   background: #b8933f;
 }
+/* LANDING HERO BANNER */
+.landing-hero {
+  position: relative;
+  min-height: 560px;
+  overflow: hidden;
+  background: #0f2418; /* fallback while image loads */
+}
+.landing-hero-bg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 560px;
+  object-fit: cover;
+  object-position: center;
+}
+
+@media (max-width: 720px) {
+  .landing-hero, .landing-hero-bg { min-height: 320px; }
+}
+/* CATEGORY SHOWCASE GRID */
+.showcase-section {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 50px 40px 70px;
+}
+.showcase-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 34px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.showcase-header h2 {
+  font-size: 44px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+.showcase-learn-btn {
+  background: var(--green);
+  color: #fff;
+  border: none;
+  padding: 13px 24px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+.showcase-learn-btn:hover { background: var(--green-dark); }
+
+.showcase-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+.showcase-col-right {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.showcase-row-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+
+.showcase-card {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+.showcase-card.light { background: var(--green-light); }
+.showcase-card.dark { background: #0d3328; }
+
+.showcase-card-tall { min-height: 560px; }
+
+.showcase-card-title {
+  position: relative;
+  z-index: 2;
+  padding: 30px 30px 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+.showcase-card.light .showcase-card-title { color: var(--text); }
+.showcase-card.dark .showcase-card-title { color: #fff; }
+
+.showcase-card-img {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 30px 40px;
+}
+.showcase-card-img img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.showcase-card-arrow {
+  position: absolute;
+  bottom: 22px;
+  left: 24px;
+  z-index: 3;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--green-dark);
+  transition: transform 0.2s;
+}
+.showcase-card:hover .showcase-card-arrow { transform: translateX(4px); }
+
+@media (max-width: 860px) {
+  .showcase-grid { grid-template-columns: 1fr; }
+  .showcase-row-split { grid-template-columns: 1fr; }
+  .showcase-card-tall { min-height: 340px; }
+  .showcase-header h2 { font-size: 30px; }
+}
+/* TOP NAVBAR */
+.site-navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 40px;
+  background: linear-gradient(90deg, #eef3f0 0%, #f4f7f5 100%);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.navbar-logo {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.navbar-brand-text h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--green);
+  letter-spacing: -0.3px;
+  line-height: 1.15;
+}
+.navbar-brand-text span {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 34px;
+}
+.navbar-link {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  padding-bottom: 6px;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  cursor: pointer;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+.navbar-link:hover { color: var(--green); }
+.navbar-link.active {
+  color: #3b6fe0;
+  border-bottom-color: #3b6fe0;
+}
+
+.navbar-icons {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.navbar-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  transition: background 0.15s;
+}
+.navbar-icon-btn:hover { background: var(--green-light); }
+
+@media (max-width: 900px) {
+  .navbar-links { display: none; }
+  .site-navbar { padding: 12px 20px; }
+  .navbar-brand-text h1 { font-size: 19px; }
+}
+.collaboration-section {
+    background: #fff;
+}
+
+.collaboration-section h2 {
+    color: #1d1d1f;
+    font-weight: 700;
+}
+
+.collaboration-section .lead {
+    color: #6c757d;
+    font-size: 1.15rem;
+    line-height: 1.9;
+    max-width: 950px;
+    margin: auto;
+}
+
+.collaboration-section img {
+    max-width: 100%;
+    height: auto;
+}
+.collaboration-section {
+    background: #fff;
+}
+
+.collaboration-section h2 {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #222;
+}
+
+.collaboration-section .lead {
+    max-width: 900px;
+    margin: 0 auto;
+    font-size: 1.25rem;
+    line-height: 1.8;
+    color: #5f6368;
+    text-align: center;
+}
 </style>
 </head>
 <body>
+<!-- TOP NAVBAR -->
+<nav class="site-navbar">
+  <div class="navbar-brand">
+    <img class="navbar-logo" src="images/image.png" alt="Freshroots Technologies">
+    <div class="navbar-brand-text">
+      <h1>Freshroots Technologies</h1>
+      <span>Private Limited</span>
+    </div>
+  </div>
+
+  <div class="navbar-links">
+    <a href="#" class="navbar-link">Home</a>
+    <a href="#" class="navbar-link">Online Store</a>
+    <a href="#about" class="navbar-link">About</a>
+    <a href="#services" class="navbar-link">Services</a>
+    <a href="#partnerships" class="navbar-link">Partnerships</a>
+    <a href="#cards-grid" class="navbar-link">Solutions</a>
+    <a href="#contact" class="navbar-link">Contact</a>
+  </div>
+
+  <div class="navbar-icons">
+    <button class="navbar-icon-btn" title="Search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+    <button class="navbar-icon-btn" title="Toggle dark mode">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </div>
+</nav>
+<!-- LANDING HERO BANNER -->
+<div class="landing-hero">
+  <img class="landing-hero-bg" src="images/hero4.png" alt="Freshroots meeting room setup">
+</div>
+<!-- CATEGORY SHOWCASE -->
+<div class="showcase-section">
+  <div class="showcase-header">
+    <h2>Innovate Communication</h2>
+    <button class="showcase-learn-btn" onclick="document.getElementById('cards-grid').scrollIntoView({behavior:'smooth'})">
+      Learn More
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </button>
+  </div>
+
+  <div class="showcase-grid">
+    <!-- LEFT: Video Conferencing Devices (tall) -->
+    <div class="showcase-card light showcase-card-tall" onclick="document.getElementById('cards-grid').scrollIntoView({behavior:'smooth'})">
+      <div class="showcase-card-title">Video Conferencing Devices</div>
+      <div class="showcase-card-img">
+        <img src="images/vc.png" alt="Video Conferencing Devices">
+      </div>
+      <div class="showcase-card-arrow">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="showcase-col-right">
+      <!-- Headsets (dark, wide) -->
+      <div class="showcase-card dark" onclick="document.getElementById('cards-grid').scrollIntoView({behavior:'smooth'})">
+        <div class="showcase-card-title">Headsets</div>
+        <div class="showcase-card-img">
+          <img src="images/headset3.png" alt="Headsets">
+        </div>
+        <div class="showcase-card-arrow">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>
+
+      <!-- IP Phones + USB Cameras split -->
+      <div class="showcase-row-split">
+        <div class="showcase-card light" onclick="document.getElementById('cards-grid').scrollIntoView({behavior:'smooth'})">
+          <div class="showcase-card-title">IP Phones</div>
+          <div class="showcase-card-img">
+            <img src="images/ipphone.png" alt="IP Phones">
+          </div>
+          <div class="showcase-card-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+        <div class="showcase-card light" onclick="document.getElementById('cards-grid').scrollIntoView({behavior:'smooth'})">
+          <div class="showcase-card-title">USB Cameras</div>
+          <div class="showcase-card-img">
+            <img src="images/homepage-usbcamera.png" alt="USB Cameras">
+          </div>
+          <div class="showcase-card-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- Chat Widget -->
 <div id="chat-widget">
   <div id="chat-toggle-btn" onclick="toggleChat()">🤖</div>
@@ -844,13 +1330,13 @@
     Freshroots Technologies
   </div>
   <h1>Recommended <span>Setup</span></h1>
-  <p>Click any product card to view details and add to cart</p>
+  <p>Click any product card to view specs and add to cart</p>
 </div>
 
 <!-- CARDS GRID -->
 <div class="cards-grid" id="cards-grid"></div>
 
-<!-- PRODUCT DETAIL MODAL -->
+<!-- PRODUCT DETAIL MODAL (kept for compatibility, no longer linked from cards) -->
 <div class="overlay" id="product-overlay" onclick="closeProductModal(event)">
   <div class="modal" id="product-modal">
     <div class="modal-header">
@@ -858,6 +1344,24 @@
       <button class="close-btn" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- INSPECT VIEW OVERLAY -->
+<div class="inspect-overlay" id="inspect-overlay" onclick="closeInspectOverlay(event)">
+  <div class="inspect-modal" id="inspect-modal">
+    <div class="inspect-topbar">
+      <div class="inspect-breadcrumb" id="inspect-breadcrumb"></div>
+      <div style="display:flex; align-items:center; gap:22px;">
+        <div class="inspect-tabs">
+          <div class="inspect-tab active">Overview</div>
+          <div class="inspect-tab">Specs</div>
+          <div class="inspect-tab">Resources</div>
+        </div>
+        <button class="close-btn" onclick="closeInspect()">✕</button>
+      </div>
+    </div>
+    <div class="inspect-body" id="inspect-body"></div>
   </div>
 </div>
 
@@ -996,24 +1500,28 @@ const camIcon = `<svg viewBox="0 0 64 48" fill="none" xmlns="http://www.w3.org/2
 </svg>`;
 
 const products = [
-  {
+{
     id: 1,
     sku: "HUDDLE-UVC40E2",
     label: "Huddle Room",
-    title: "UVC40E2 ",
+    title: "UVC40E2",
     model: "Yealink UVC40E2 Kit",
     price: 70000,
     image: "images/Huddle Room.png",
-    description: "The perfect all-in-one video conferencing solution for small huddle rooms. The UVC40E2 features a built-in 4K camera, speaker, and microphone in a sleek soundbar form factor. ",
+
+    video: "https://www.yealink.com/website-service/attachment/product/video/20240329/20240329082808892237ec134520999e9294e2194a35.mp4",
+
+    description: "The perfect all-in-one video conferencing solution for small huddle rooms. The UVC40E2 features a built-in 4K camera, speaker, and microphone in a sleek soundbar form factor.",
+
     specs: [
-      { label: "Camera", value: "8 megapixels" },
-      { label: "Microphone", value: "8-mic array" },
-      { label: "Coverage", value: "4 to 6 people" },
-      { label: "Connection", value: "USB + HDMI" },
-      { label: "AI Framing", value: "Yes" },
-      { label: "Noise Cancel", value: "Built-in" }
+        { label: "Camera", value: "8 megapixels" },
+        { label: "Microphone", value: "8-mic array" },
+        { label: "Coverage", value: "4 to 6 people" },
+        { label: "Connection", value: "USB + HDMI" },
+        { label: "AI Framing", value: "Yes" },
+        { label: "Noise Cancel", value: "Built-in" }
     ]
-  },
+},
   {
     id: 2,
     sku: "SMALL-SV40",
@@ -1022,6 +1530,8 @@ const products = [
     model: "Yealink SV40 Kit",
     price: 160000,
     image: "images/small room.png",
+    video: "https://www.yealink.com/website-service/attachment/product/video/20240329/20240329082808892237ec134520999e9294e2194a35.mp4",
+
     description: "Designed for small meeting rooms, the SV40 video bar delivers crystal-clear 4K video with an AI-powered camera. Multi-platform support for Teams, Zoom, and more.",
     specs: [
       { label: "Camera", value: "48mp *@  / 120° FOV" },
@@ -1263,9 +1773,57 @@ const products = [
     { label: "Compatibility", value: "Yealink MVC, MeetingBar, MeetingBoard & Pro AV Systems" },
     { label: "Installation", value: "Ceiling Mount, Low-Profile Design" }
   ]
-}
-];
+},
+  {
+    id: 14,
+    sku: "MB75PRO-A02",
+    label: "Interactive Board",
+    title: "MB75Pro-A02",
+    model: "MB75Pro-A02",
+    price: 768075,
+    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTd5bOc5B-meZScD0OTRNdcNIwPzqy_43ZzClS4w1szDA&s",
+    description: "Large-format interactive display for boardrooms and huddle spaces, combining a 4K touchscreen with built-in video conferencing and wireless casting. (Model: MB75Pro-A02).",
+    specs: [
+      { label: "Display Type", value: "Interactive 4K Touch Display" },
+      { label: "Sharing", value: "Wireless Screen Cast" },
+      { label: "Whiteboard", value: "Built-in Annotation" },
+      { label: "Platform", value: "Teams / Zoom / BYOD" }
+    ]
+  },
+  {
+    id: 15,
+    sku: "MB65PRO-A02",
+    label: "Interactive Board",
+    title: "MB65Pro-A02",
+    model: "MB65Pro-A02",
+    price: 592900,
+    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRlnCIz1itGgzaO13mZN6wjW8pBWtuJoA69qk0uJsCqqA&s=10",
+    description: "Large-format interactive display for boardrooms and huddle spaces, combining a 4K touchscreen with built-in video conferencing and wireless casting. (Model: MB65Pro-A02).",
+    specs: [
+      { label: "Display Type", value: "Interactive 4K Touch Display" },
+      { label: "Sharing", value: "Wireless Screen Cast" },
+      { label: "Whiteboard", value: "Built-in Annotation" },
+      { label: "Platform", value: "Teams / Zoom / BYOD" }
+    ]
+  },
+  {
+    id: 16,
+    sku: "MB86PRO-A02",
+    label: "Interactive Board",
+    title: "MB86Pro-A02",
+    model: "MB86Pro-A02",
+    price: 943250,
+    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRlnCIz1itGgzaO13mZN6wjW8pBWtuJoA69qk0uJsCqqA&s=10",
+    description: "Large-format interactive display for boardrooms and huddle spaces, combining a 4K touchscreen with built-in video conferencing and wireless casting. (Model: MB86Pro-A02).",
+    specs: [
+      { label: "Display Type", value: "Interactive 4K Touch Display" },
+      { label: "Sharing", value: "Wireless Screen Cast" },
+      { label: "Whiteboard", value: "Built-in Annotation" },
+      { label: "Platform", value: "Teams / Zoom / BYOD" }
+    ]
+  }
 
+];
 
 // ─── PER-USER SESSION CART ────────────────────────────────────────────────────
 // Each browser tab/window gets a unique SESSION_ID on first load.
@@ -1299,6 +1857,11 @@ sessionStorage.removeItem(CART_KEY);
 let cart = [];
 let currentProduct = null;
 let modalQty = 1;
+let inspectQty = 1;
+
+// Product IDs that currently have the full "Specs" tech-spec view wired up.
+// Now enabled for every product in the catalog.
+const INSPECT_ENABLED_IDS = products.map(p => p.id);
 
 function formatINR(n) {
   return n.toLocaleString('en-IN');
@@ -1314,18 +1877,26 @@ function cardImg(p, size) {
 
 function renderCards() {
   const grid = document.getElementById('cards-grid');
-  grid.innerHTML = products.map(p => `
-    <div class="product-card" onclick="openProduct(${p.id})">
-      <div class="card-img-wrap">
+  const list = products;
+  grid.innerHTML = list.map(p => `
+    <div class="product-card">
+      <div class="card-img-wrap" onclick="openInspect(${p.id})">
         <div class="card-room-tag">${p.label}</div>
         ${cardImg(p, 150)}
       </div>
       <div class="card-body">
-        <div class="card-title">${p.title}</div>
-        <div class="card-model">${p.model}</div>
+        <div onclick="openInspect(${p.id})" style="cursor:pointer;">
+          <div class="card-title">${p.title}</div>
+          <div class="card-model">${p.model}</div>
+        </div>
         <div class="card-footer-row">
           <div class="card-price">₹${formatINR(p.price)}</div>
-          <div class="card-cta">View Details </div>
+          <div class="card-btn-row">
+            <div class="card-inspect" onclick="event.stopPropagation(); openInspect(${p.id})">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              Specs
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1377,6 +1948,145 @@ function closeModal() {
 
 function closeProductModal(e) {
   if (e.target === document.getElementById('product-overlay')) closeModal();
+}
+
+// ─── SPECS VIEW (tech-spec style page, shown for enabled products) ────────
+function openInspect(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  currentProduct = p;
+  inspectQty = 1;
+
+  document.getElementById('inspect-breadcrumb').innerHTML = `
+    <span>Home</span><span class="sep">›</span><span>Products</span><span class="sep">›</span><b>${p.title.trim()}</b>
+  `;
+
+  document.getElementById('inspect-body').innerHTML = `
+    <div class="inspect-media-col">
+      <div class="inspect-image-wrap" id="inspect-main-img">${cardImg(p, 260)}</div>
+      <div class="inspect-thumbs">
+        <div class="inspect-thumb active" onclick="showInspectImage()">${cardImg(p, 34)}</div>
+        ${p.video ? `<div class="inspect-thumb video-thumb" onclick="playInspectVideo()" title="Play video"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="#1c7a44" stroke-width="1"/><path d="M10 8l6 4-6 4V8z" fill="#1c7a44"/></svg></div>
+                                <div class="inspect-thumb" onclick="shareInspectVideo()" title="Share video">
+                                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" stroke="#1c7a44" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 3v14" stroke="#1c7a44" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 7l4-4 4 4" stroke="#1c7a44" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </div>` : ''}
+      </div>
+    </div>
+    <div class="inspect-info-col">
+      <div class="inspect-title">${p.title.trim()}</div>
+      <div class="inspect-pills">
+        ${p.specs.slice(0, 5).map(s => `<div class="inspect-pill"><b>${s.label}:</b> ${s.value}</div>`).join('')}
+      </div>
+      <div class="inspect-price-row">
+        <div class="inspect-price">₹${formatINR(p.price)}</div>
+        <div class="inspect-sku">SKU: ${p.sku}</div>
+      </div>
+      <div class="inspect-qty-row">
+        <span class="qty-label">Qty:</span>
+        <div class="qty-control">
+          <button class="qty-btn" onclick="changeInspectQty(-1)">−</button>
+          <span class="qty-display" id="inspect-qty">1</span>
+          <button class="qty-btn" onclick="changeInspectQty(1)">+</button>
+        </div>
+      </div>
+      <div class="inspect-actions">
+        <button class="inspect-compare-btn" onclick="addToCartFromInspect(${p.id})">
+          Add to Cart
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+        <button class="inspect-cart-btn" onclick="closeInspect();">Close</button>
+      </div>
+      <div class="inspect-desc">${p.description}</div>
+    </div>
+  `;
+
+  document.getElementById('inspect-overlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function changeInspectQty(delta) {
+  inspectQty = Math.max(1, inspectQty + delta);
+  const el = document.getElementById('inspect-qty');
+  if (el) el.textContent = inspectQty;
+}
+
+function addToCartFromInspect(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  const existing = cart.find(i => i.id === p.id);
+  if (existing) existing.qty += inspectQty;
+  else cart.push({ ...p, qty: inspectQty });
+  saveCart(cart);
+  updateCartUI();
+  closeInspect();
+  flashCartBtn();
+}
+
+function closeInspect() {
+  stopInspectVideo();
+  document.getElementById('inspect-overlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function closeInspectOverlay(e) {
+  if (e.target === document.getElementById('inspect-overlay')) closeInspect();
+}
+
+function playInspectVideo() {
+  if (!currentProduct || !currentProduct.video) return;
+  const wrap = document.getElementById('inspect-main-img');
+  wrap.innerHTML = `
+    <div class="media-root" style="height:260px;">
+      <video class="product-media" controls autoplay playsinline>
+        <source src="${currentProduct.video}" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+    </div>`;
+}
+
+function shareInspectVideo() {
+  if (!currentProduct || !currentProduct.video) return;
+  const url = currentProduct.video;
+  const title = currentProduct.title || 'Video';
+  const text = `${title} - check this video:`;
+
+  if (navigator.share) {
+    navigator.share({ title, text, url }).catch(() => {
+      // ignore
+    });
+    return;
+  }
+
+  // Fallback: WhatsApp pre-filled message
+  const wa = `https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + url)}`;
+  window.open(wa, '_blank');
+}
+
+function copyVideoLink() {
+  if (!currentProduct || !currentProduct.video) return;
+  const url = currentProduct.video;
+  try {
+    navigator.clipboard.writeText(url).then(() => alert('Video link copied to clipboard'));
+  } catch (e) {
+    const ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); alert('Video link copied to clipboard');
+  }
+}
+
+function showInspectImage() {
+  if (!currentProduct) return;
+  const wrap = document.getElementById('inspect-main-img');
+  wrap.innerHTML = cardImg(currentProduct, 260);
+}
+
+function stopInspectVideo() {
+  const wrap = document.getElementById('inspect-main-img');
+  if (!wrap) return;
+  const vid = wrap.querySelector('video');
+  if (vid) {
+    try { vid.pause(); vid.removeAttribute('src'); vid.load(); } catch (e) {}
+  }
+  // Restore image preview if available
+  if (currentProduct) wrap.innerHTML = cardImg(currentProduct, 260);
 }
 
 function addToCart() {
@@ -1586,6 +2296,12 @@ async function loadLivePrices() {
   // Show a small session tag in the cart header (last 6 chars of session ID)
   document.getElementById('session-tag').textContent = '#' + SESSION_ID.slice(-6).toUpperCase();
 })();
+
 </script>
+<section class="collaboration-section py-5">
+    <div class="container">
+
+    </div>
+</section>
 </body>
 </html>
